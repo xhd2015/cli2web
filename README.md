@@ -70,4 +70,5 @@ cli schema | cli2web
 - [ ] allow stdin interaction
 - [ ] mark non-terminal command runnable
 - [ ] support variadic arguments
+- [ ] mark options required
 - [ ] auto generate schema from cli help using LLM

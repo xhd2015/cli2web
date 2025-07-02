@@ -141,15 +141,7 @@ func renderCommand(config CLIConfig, path string) string {
 	if len(cmd.Arguments) > 0 {
 		sb.WriteString(`<h2>Arguments</h2>`)
 		for _, arg := range cmd.Arguments {
-			sb.WriteString(`<div class="option">`)
-			if arg.Multiline {
-				sb.WriteString(fmt.Sprintf(`<label>%s (%s): <textarea name="arg-%s">%s</textarea></label>`,
-					html.EscapeString(arg.Name), html.EscapeString(arg.Description), html.EscapeString(arg.Name), html.EscapeString(arg.Default)))
-			} else {
-				sb.WriteString(fmt.Sprintf(`<label>%s (%s): <input type="text" name="arg-%s" value="%s"></label>`,
-					html.EscapeString(arg.Name), html.EscapeString(arg.Description), html.EscapeString(arg.Name), html.EscapeString(arg.Default)))
-			}
-			sb.WriteString(`</div>`)
+			renderInput(&sb, "option", arg.Type, arg.Name, arg.Description, arg.Multiline, "arg-"+arg.Name, arg.Default)
 		}
 	}
 
@@ -157,18 +149,7 @@ func renderCommand(config CLIConfig, path string) string {
 	if len(cmd.Options) > 0 {
 		sb.WriteString(`<h2>Options</h2>`)
 		for _, opt := range cmd.Options {
-			sb.WriteString(`<div class="option">`)
-			if opt.Type == "boolean" {
-				sb.WriteString(fmt.Sprintf(`<label><input type="checkbox" name="%s"> %s (%s)</label>`,
-					html.EscapeString(opt.Flags), html.EscapeString(opt.Flags), html.EscapeString(opt.Description)))
-			} else if opt.Multiline {
-				sb.WriteString(fmt.Sprintf(`<label>%s (%s): <textarea name="%s">%s</textarea></label>`,
-					html.EscapeString(opt.Flags), html.EscapeString(opt.Description), html.EscapeString(opt.Flags), html.EscapeString(opt.Default)))
-			} else {
-				sb.WriteString(fmt.Sprintf(`<label>%s (%s): <input type="text" name="%s" value="%s"></label>`,
-					html.EscapeString(opt.Flags), html.EscapeString(opt.Description), html.EscapeString(opt.Flags), html.EscapeString(opt.Default)))
-			}
-			sb.WriteString(`</div>`)
+			renderInput(&sb, "option", opt.Type, opt.Flags, opt.Description, opt.Multiline, opt.Flags, opt.Default)
 		}
 	}
 	sb.WriteString(`<button type="submit">Run</button></form>`)
@@ -179,6 +160,35 @@ func renderCommand(config CLIConfig, path string) string {
 	}
 	sb.WriteString(`</ul>`)
 	return sb.String()
+}
+
+func renderInput(sb *strings.Builder, wrapperClass string, inputType string, displayName string, description string, multiline bool, argName string, defaultValue string) {
+	var wrapperStyle string
+	if multiline {
+		wrapperStyle = ` style="display:flex;flex-direction:column;"`
+	}
+	sb.WriteString(fmt.Sprintf(`<div class="%s"%s>`, wrapperClass, wrapperStyle))
+	var descriptionHTML string
+	if description != "" {
+		descriptionHTML = " (" + html.EscapeString(description) + ")"
+	}
+
+	if inputType == "boolean" {
+		sb.WriteString(fmt.Sprintf(`<label><input type="checkbox" name="%s"> %s%s</label>`,
+			html.EscapeString(displayName), html.EscapeString(argName), descriptionHTML))
+	} else {
+		sb.WriteString(fmt.Sprintf(`<label>%s%s: </label>`,
+			html.EscapeString(displayName), descriptionHTML))
+
+		if multiline {
+			sb.WriteString(fmt.Sprintf(`<textarea name="%s">%s</textarea>`,
+				html.EscapeString(argName), html.EscapeString(defaultValue)))
+		} else {
+			sb.WriteString(fmt.Sprintf(`<input type="text" name="%s" value="%s">`,
+				html.EscapeString(argName), html.EscapeString(defaultValue)))
+		}
+	}
+	sb.WriteString(`</div>`)
 }
 
 func serveWs(w http.ResponseWriter, r *http.Request, config CLIConfig) {
