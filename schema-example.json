@@ -1,0 +1,209 @@
+{
+    "root": "kool",
+    "commands": [
+        {
+            "name": "go",
+            "description": "Go commands",
+            "commands": [
+                {
+                    "name": "replace",
+                    "description": "replace go module in the given directory"
+                },
+                {
+                    "name": "update",
+                    "description": "update to the latest tag of the module in dir"
+                },
+                {
+                    "name": "inspect",
+                    "description": "inspect the given package and type"
+                },
+                {
+                    "name": "run",
+                    "description": "run the given program with debug mode"
+                },
+                {
+                    "name": "example",
+                    "description": "Go example commands",
+                    "commands": [
+                        {
+                            "name": "parse-flag",
+                            "description": "code snippet for parsing flag"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "git",
+            "description": "Git commands",
+            "commands": [
+                {
+                    "name": "tag-next",
+                    "description": "Get the next git tag",
+                    "options": [
+                        {
+                            "flags": "--push",
+                            "description": "push the tag to remote",
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                {
+                    "name": "show-tag",
+                    "description": "show the tag of the given directory"
+                },
+                {
+                    "name": "show-exclude",
+                    "description": "show the exclude rules"
+                },
+                {
+                    "name": "show-children",
+                    "description": "show the children of the given commit"
+                },
+                {
+                    "name": "check-merge",
+                    "description": "check if refs are merged into HEAD"
+                }
+            ]
+        },
+        {
+            "name": "vscode",
+            "description": "VSCode commands",
+            "commands": [
+                {
+                    "name": "debug-go",
+                    "description": "print vscode config for debugging go program with args"
+                }
+            ]
+        },
+        {
+            "name": "http",
+            "description": "HTTP commands",
+            "commands": [
+                {
+                    "name": "serve",
+                    "description": "start a static HTTP server"
+                }
+            ]
+        },
+        {
+            "name": "ai",
+            "description": "AI commands"
+        },
+        {
+            "name": "kill-port",
+            "description": "kill process on the given port",
+            "arguments": [
+                {
+                    "name": "port",
+                    "description": "The port number to kill",
+                    "type": "string",
+                    "default": ""
+                }
+            ]
+        },
+        {
+            "name": "check-port-ready",
+            "description": "check if the port is ready",
+            "arguments": [
+                {
+                    "name": "port",
+                    "description": "The port number to check",
+                    "type": "string",
+                    "default": ""
+                }
+            ]
+        },
+        {
+            "name": "help",
+            "description": "show help message"
+        },
+        {
+            "name": "unquote",
+            "description": "unquote string",
+            "arguments": [
+                {
+                    "name": "string",
+                    "description": "The quoted string to unquote (e.g., \"hello\")",
+                    "type": "string",
+                    "default": ""
+                }
+            ]
+        },
+        {
+            "name": "compress",
+            "description": "compress json string"
+        },
+        {
+            "name": "echo-multiline",
+            "description": "Echoes multiline input",
+            "arguments": [
+                {
+                    "name": "text",
+                    "description": "Multiline text input",
+                    "type": "string",
+                    "multiline": true,
+                    "default": ""
+                }
+            ]
+        },
+        {
+            "name": "lines",
+            "description": "Line manipulation commands",
+            "commands": [
+                {
+                    "name": "uniq",
+                    "description": "uniq lines without sorting, last preserved"
+                },
+                {
+                    "name": "reverse",
+                    "description": "reverse lines"
+                },
+                {
+                    "name": "sort",
+                    "description": "sort lines"
+                }
+            ]
+        },
+        {
+            "name": "with",
+            "description": "Run command with specific environment",
+            "commands": [
+                {
+                    "name": "goX.Y",
+                    "description": "install goX.Y and execute the given command"
+                },
+                {
+                    "name": "with-goroot",
+                    "description": "set GOROOT and execute the given command"
+                }
+            ]
+        },
+        {
+            "name": "rule",
+            "description": "Rule commands",
+            "commands": [
+                {
+                    "name": "add",
+                    "description": "add a rule file to ~/.kool/rules/files/"
+                },
+                {
+                    "name": "list",
+                    "description": "list all available rule files"
+                },
+                {
+                    "name": "use",
+                    "description": "copy a rule file to .cursor/rules/ if not exists"
+                },
+                {
+                    "name": "dir",
+                    "description": "show the rules directory location"
+                },
+                {
+                    "name": "rm",
+                    "description": "remove a rule file from ~/.kool/rules/files/"
+                }
+            ]
+        }
+    ]
+}
