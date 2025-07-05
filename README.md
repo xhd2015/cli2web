@@ -65,10 +65,12 @@ cli schema | cli2web
 - [x] arguments
 - [x] auto select port and open
 - [x] bool options as checkbox
-- [ ] predefined options
+- [ ] predefined options(dropdown)
 - [ ] allow uploading from file
 - [ ] allow stdin interaction
-- [ ] mark non-terminal command runnable
+- [ ] mark non-leaf command runnable
 - [ ] support variadic arguments
 - [ ] mark options required
+- [x] schema from markjson directory
+- [x] markjson examples
 - [ ] auto generate schema from cli help using LLM

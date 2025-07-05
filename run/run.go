@@ -19,10 +19,29 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/xhd2015/cli2web/config"
+	"github.com/xhd2015/cli2web/schema"
 	"github.com/xhd2015/less-gen/flags"
 	"github.com/xhd2015/less-gen/netport"
 	"golang.org/x/term"
 )
+
+const help = `
+cli2web converts your CLI into web interface
+
+Usage: cli2web --schema schema.json
+
+Options:
+  --schema <file>            path to the schema file
+  --port <port>              port to serve the web interface on
+
+Other commands:
+  cli2web parse-schema <schema.json>    parse schema from json file
+  cli2web parse-schema <dir>            parse schema from directory
+
+The schema:
+  cli2web example
+`
 
 //go:embed static/style.css
 var styleCSS string
@@ -35,54 +54,13 @@ func Main(args []string) error {
 }
 
 type RunOptions struct {
-	Schema []byte
-	Port   int
+	Schema       []byte
+	SchemaConfig *config.Schema
+	Port         int
 }
 
 func Run(opts RunOptions) error {
-	return runConfig(opts.Schema, opts.Port)
-}
-
-// CLIConfig represents the JSON schema
-type CLIConfig struct {
-	Root     string    `json:"root"`
-	Commands []Command `json:"commands"`
-}
-
-type Command struct {
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Commands    []Command  `json:"commands"`
-	Examples    []Example  `json:"examples"`
-	Options     []Option   `json:"options"`
-	Arguments   []Argument `json:"arguments"`
-	Output      Output     `json:"output"`
-}
-
-type Argument struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
-	Default     string `json:"default"`
-	Multiline   bool   `json:"multiline"`
-}
-
-type Example struct {
-	Usage       string `json:"usage"`
-	Description string `json:"description"`
-}
-
-type Option struct {
-	Flags       string `json:"flags"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
-	Default     string `json:"default"`
-	Multiline   bool   `json:"multiline"`
-}
-
-type Output struct {
-	Type        string `json:"type"`
-	Description string `json:"description"`
+	return runConfig(opts.Schema, opts.SchemaConfig, opts.Port)
 }
 
 var upgrader = websocket.Upgrader{
@@ -90,15 +68,15 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func renderSidebar(config CLIConfig) string {
+func renderSidebar(cfg *config.Schema) string {
 	var sb strings.Builder
 	header := "Commands"
-	if config.Root != "" {
-		header = config.Root + " Commands"
+	if cfg.Name != "" {
+		header = cfg.Name + " Commands"
 	}
 	sb.WriteString(`<div class="sidebar"><h2>` + html.EscapeString(header) + `</h2><ul class="tree">`)
-	var renderCommands func([]Command, string)
-	renderCommands = func(commands []Command, prefix string) {
+	var renderCommands func([]*config.Command, string)
+	renderCommands = func(commands []*config.Command, prefix string) {
 		for _, cmd := range commands {
 			path := prefix + "/" + cmd.Name
 			sb.WriteString("<li>")
@@ -114,14 +92,14 @@ func renderSidebar(config CLIConfig) string {
 			sb.WriteString("</li>")
 		}
 	}
-	renderCommands(config.Commands, "")
+	renderCommands(cfg.Commands, "")
 	sb.WriteString(`</ul></div>`)
 	return sb.String()
 }
 
-func findCommand(commands []Command, pathParts []string) (Command, bool) {
+func findCommand(commands []*config.Command, pathParts []string) (*config.Command, bool) {
 	if len(pathParts) == 0 {
-		return Command{}, false
+		return &config.Command{}, false
 	}
 	for _, cmd := range commands {
 		if cmd.Name == pathParts[0] {
@@ -131,10 +109,10 @@ func findCommand(commands []Command, pathParts []string) (Command, bool) {
 			return findCommand(cmd.Commands, pathParts[1:])
 		}
 	}
-	return Command{}, false
+	return &config.Command{}, false
 }
 
-func renderCommand(config CLIConfig, path string) string {
+func renderCommand(config *config.Schema, path string) string {
 	pathParts := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	cmd, ok := findCommand(config.Commands, pathParts)
 	if !ok {
@@ -143,8 +121,8 @@ func renderCommand(config CLIConfig, path string) string {
 
 	var sb strings.Builder
 	commandName := strings.Join(pathParts, " ")
-	if config.Root != "" {
-		commandName = config.Root + " " + commandName
+	if config.Name != "" {
+		commandName = config.Name + " " + commandName
 	}
 	sb.WriteString(fmt.Sprintf(`<h1>%s</h1><p>%s</p>`,
 		html.EscapeString(commandName), html.EscapeString(cmd.Description)))
@@ -167,9 +145,10 @@ func renderCommand(config CLIConfig, path string) string {
 	}
 	sb.WriteString(`<button type="submit">Run</button></form>`)
 	sb.WriteString(`<h2>Output</h2><pre id="output"></pre>`)
-	sb.WriteString(`<h2>Examples</h2><ul>`)
+	sb.WriteString(`<h2>Examples</h2>`)
+	sb.WriteString(`<ul>`)
 	for _, ex := range cmd.Examples {
-		sb.WriteString(fmt.Sprintf(`<li>%s: %s</li>`, html.EscapeString(ex.Usage), html.EscapeString(ex.Description)))
+		sb.WriteString(fmt.Sprintf(`<li><div style="display:flex;flex-direction:column;"><div>%s</div> <pre><code>%s</code></pre></div></li>`, html.EscapeString(ex.Description), html.EscapeString(ex.Usage)))
 	}
 	sb.WriteString(`</ul>`)
 	return sb.String()
@@ -204,7 +183,7 @@ func renderInput(sb *strings.Builder, wrapperClass string, inputType string, dis
 	sb.WriteString(`</div>`)
 }
 
-func serveWs(w http.ResponseWriter, r *http.Request, config CLIConfig) {
+func serveWs(w http.ResponseWriter, r *http.Request, config *config.Schema) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Websocket upgrade error:", err)
@@ -241,8 +220,8 @@ func serveWs(w http.ResponseWriter, r *http.Request, config CLIConfig) {
 	}
 
 	var args []string
-	if config.Root != "" {
-		args = append(args, config.Root)
+	if config.Name != "" {
+		args = append(args, config.Name)
 	}
 	args = append(args, pathParts...)
 
@@ -314,59 +293,60 @@ func streamOutput(conn *websocket.Conn, reader io.Reader, streamType string, wg 
 	log.Printf("[%s] Stream finished.", streamType)
 }
 
-const help = `
-cli2web converts your CLI into web interface
-
-Usage: cli2web --schema schema.json
-
-Options:
-  --schema <file>        path to the schema file
-  --port <port>          port to serve the web interface on
-
-The schema:
-  cli2web example
-`
-
 func runArgs(args []string) error {
 	var schemaPath string
 	var port int
+
+	origArgs := args
 	args, err := flags.String("--schema", &schemaPath).
 		Bool("--port", &port).
 		Help("-h,--help", help).
-		Parse(os.Args[1:])
+		Parse(args)
 	if err != nil {
 		return err
 	}
 
 	if len(args) > 0 {
-		return fmt.Errorf("unrecognized extra arguments: %s", strings.Join(args, ", "))
+		cmd := origArgs[0]
+		cmdArgs := origArgs[1:]
+		switch cmd {
+		case "parse-schema":
+			return handleParseSchema(cmdArgs)
+		case "example":
+			return handleExample(cmdArgs)
+		}
+		return fmt.Errorf("unrecognized command: %s", cmd)
 	}
 
 	var configData []byte
 	if schemaPath == "" {
 		if IsStdinTTY() {
-			return fmt.Errorf("requires --schema")
+			return fmt.Errorf("requires --schema, try `cli2web --help`")
 		}
 		// read schema from stdin
 		configData, err = io.ReadAll(os.Stdin)
 		if err != nil {
-			return fmt.Errorf("Error reading schema from stdin: %v", err)
+			return fmt.Errorf("reading schema from stdin: %v", err)
 		}
 	} else {
 		// Read and parse JSON schema
 		configData, err = os.ReadFile(schemaPath)
 		if err != nil {
-			return fmt.Errorf("Error reading schema file: %v", err)
+			return fmt.Errorf("reading schema file: %v", err)
 		}
 	}
 
-	return runConfig(configData, port)
+	return runConfig(configData, nil, port)
 }
 
-func runConfig(configData []byte, port int) error {
-	var config CLIConfig
-	if err := json.Unmarshal(configData, &config); err != nil {
-		return fmt.Errorf("Error parsing schema file: %v", err)
+func runConfig(configData []byte, schemaConfig *config.Schema, port int) error {
+	var config *config.Schema
+	if schemaConfig != nil {
+		config = schemaConfig
+	} else {
+		if err := json.Unmarshal(configData, &config); err != nil {
+			return fmt.Errorf("parsing schema file: %v", err)
+		}
 	}
 
 	// Serve static files
@@ -390,8 +370,8 @@ func runConfig(configData []byte, port int) error {
 			// Command page
 			pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
 			title := strings.Join(pathParts, " ")
-			if config.Root != "" {
-				title = config.Root + " " + title
+			if config.Name != "" {
+				title = config.Name + " " + title
 			}
 			fmt.Fprint(w, renderPage(title, renderCommand(config, r.URL.Path)))
 			return
@@ -399,8 +379,8 @@ func runConfig(configData []byte, port int) error {
 
 		// Home page
 		webTitle := "CLI Web Interface"
-		if config.Root != "" {
-			webTitle = config.Root + " Web Interface"
+		if config.Name != "" {
+			webTitle = config.Name + " Web Interface"
 		}
 		content := `<h1>` + html.EscapeString(webTitle) + `</h1><p>Select a command from the sidebar to begin.</p>`
 		fmt.Fprint(w, renderPage(webTitle, content))
@@ -413,7 +393,7 @@ func runConfig(configData []byte, port int) error {
 	if port == 0 {
 		listenPort, err := netport.FindListenablePort("", 7777, 100)
 		if err != nil {
-			return fmt.Errorf("Error finding listenable port: %v", err)
+			return fmt.Errorf("finding listenable port: %v", err)
 		}
 		port = listenPort
 	}
@@ -449,11 +429,59 @@ func runConfig(configData []byte, port int) error {
 	}()
 
 	if err := http.ListenAndServe(listenAddr, nil); err != nil {
-		return fmt.Errorf("Server error: %v", err)
+		return fmt.Errorf("server error: %v", err)
 	}
 	return nil
 }
 
 func IsStdinTTY() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))
+}
+
+func handleParseSchema(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("requires schema file or dir")
+	}
+	file := args[0]
+	args = args[1:]
+	if len(args) > 0 {
+		return fmt.Errorf("unrecognized extra arguments: %s", strings.Join(args, ", "))
+	}
+	if file == "" {
+		return fmt.Errorf("requires schema file or dir")
+	}
+
+	stat, err := os.Stat(file)
+	if err != nil {
+		return fmt.Errorf("reading schema file: %v", err)
+	}
+	if !stat.IsDir() {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("reading schema file: %v", err)
+		}
+		var schema *config.Schema
+		if err := json.Unmarshal(data, &schema); err != nil {
+			return fmt.Errorf("parsing schema file: %v", err)
+		}
+		fmt.Printf("validated\n")
+		return nil
+	}
+	dir := file
+	schema, err := schema.ParseSchemaFromDir(dir)
+	if err != nil {
+		return fmt.Errorf("parsing schema file: %v", err)
+	}
+
+	printSchema, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling schema: %v", err)
+	}
+	fmt.Println(string(printSchema))
+	return nil
+}
+
+func handleExample(args []string) error {
+	fmt.Printf("example not implemented yet")
+	return nil
 }

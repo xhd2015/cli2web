@@ -1,0 +1,29 @@
+[
+    {
+        "title": "Main Section",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "This is the main content."
+            }
+        ]
+    },
+    {
+        "title": "# Subsection",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "This is a subsection."
+            }
+        ]
+    },
+    {
+        "title": "## Deep Section",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "This is deeply nested."
+            }
+        ]
+    }
+]

@@ -1,0 +1,25 @@
+[
+    {
+        "title": "Code Section",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "First code block:"
+            },
+            {
+                "type": "code",
+                "language": "go",
+                "content": "func main() {}"
+            },
+            {
+                "type": "text",
+                "content": "Second code block:"
+            },
+            {
+                "type": "code",
+                "language": "json",
+                "content": "{\"key\": \"value\"}"
+            }
+        ]
+    }
+]

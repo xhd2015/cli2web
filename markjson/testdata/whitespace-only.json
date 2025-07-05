@@ -1,0 +1,15 @@
+[
+    {
+        "title": "Empty Section",
+        "snippets": []
+    },
+    {
+        "title": "Another Section",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Some content here."
+            }
+        ]
+    }
+]

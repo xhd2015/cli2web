@@ -1,0 +1,43 @@
+[
+    {
+        "title": "Description",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "This tool helps with configuration."
+            }
+        ]
+    },
+    {
+        "title": "Arguments",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "The following arguments are supported:"
+            },
+            {
+                "type": "code",
+                "language": "json",
+                "content": "{\n  \"name\": \"string\",\n  \"required\": true\n}"
+            }
+        ]
+    },
+    {
+        "title": "Examples",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Here are some examples:"
+            },
+            {
+                "type": "code",
+                "language": "bash",
+                "content": "./tool --name=test"
+            },
+            {
+                "type": "text",
+                "content": "More text after code block."
+            }
+        ]
+    }
+]

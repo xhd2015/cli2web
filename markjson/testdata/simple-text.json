@@ -1,0 +1,11 @@
+[
+    {
+        "title": "Description",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "This is a simple description.\nIt has multiple lines."
+            }
+        ]
+    }
+]

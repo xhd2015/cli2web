@@ -1,0 +1,16 @@
+[
+    {
+        "title": "Code",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Some code without language:"
+            },
+            {
+                "type": "code",
+                "language": "",
+                "content": "function hello() {\n  return \"world\";\n}"
+            }
+        ]
+    }
+]

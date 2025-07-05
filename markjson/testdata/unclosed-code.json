@@ -1,0 +1,16 @@
+[
+    {
+        "title": "Section",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Some text"
+            },
+            {
+                "type": "code",
+                "language": "go",
+                "content": "func main() {\n    // This code block is not closed\n}"
+            }
+        ]
+    }
+]

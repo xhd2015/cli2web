@@ -1,0 +1,16 @@
+[
+    {
+        "title": "Options",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Configure the application:"
+            },
+            {
+                "type": "code",
+                "language": "json",
+                "content": "{\n  \"port\": 8080,\n  \"host\": \"localhost\"\n}"
+            }
+        ]
+    }
+]
