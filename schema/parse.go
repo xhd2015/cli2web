@@ -56,6 +56,30 @@ func parseCommandFromMarkdown(file SchemaFile, defaultName string) (*config.Comm
 		}
 	}
 
+	// Parse alias
+	if section := sections.Find("alias"); section != nil {
+		if listSnippet := section.Snippets.FindList(); listSnippet != nil {
+			cmd.Alias = listSnippet.Items
+		}
+	}
+
+	// Parse usage
+	if section := sections.Find("usage"); section != nil {
+		rawUsage := strings.TrimSpace(section.Snippets.CombineAllTexts())
+		if rawUsage != "" {
+			cmd.Usage = cleanupDescription(rawUsage)
+		}
+	}
+
+	// Parse notes
+	if section := sections.Find("notes"); section != nil {
+		rawNotes := strings.TrimSpace(section.Snippets.CombineAllTexts())
+		if rawNotes != "" {
+			cmd.Notes = cleanupDescription(rawNotes)
+		}
+	}
+
+	// Parse examples
 	if section := sections.Find("examples"); section != nil {
 		var examples []*config.Example
 
@@ -80,6 +104,39 @@ func parseCommandFromMarkdown(file SchemaFile, defaultName string) (*config.Comm
 			})
 		}
 		cmd.Examples = examples
+	}
+
+	// Parse usage section and add to examples
+	if section := sections.Find("usage"); section != nil {
+		var usageExamples []*config.Example
+
+		n := len(section.Snippets)
+		var descriptions []string
+		for i := 0; i < n; i++ {
+			snippet := section.Snippets[i]
+			if snippet.Type != markjson.Code {
+				descriptions = append(descriptions, snippet.Content)
+				continue
+			}
+			usageExamples = append(usageExamples, &config.Example{
+				Usage:       snippet.Content,
+				Description: strings.Join(descriptions, "\n"),
+			})
+			descriptions = nil
+		}
+		if len(descriptions) > 0 {
+			usageExamples = append(usageExamples, &config.Example{
+				Usage:       "",
+				Description: strings.Join(descriptions, "\n"),
+			})
+		}
+
+		// Merge usage examples with existing examples
+		if cmd.Examples == nil {
+			cmd.Examples = usageExamples
+		} else {
+			cmd.Examples = append(cmd.Examples, usageExamples...)
+		}
 	}
 
 	// Parse settings

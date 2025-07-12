@@ -1,0 +1,46 @@
+[
+    {
+        "title": "Description",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Test markdown with lists"
+            }
+        ]
+    },
+    {
+        "title": "Alias",
+        "snippets": [
+            {
+                "type": "list",
+                "content": "`spl prometheus`\n`spl prom`",
+                "items": [
+                    "`spl prometheus`",
+                    "`spl prom`"
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Options",
+        "snippets": [
+            {
+                "type": "text",
+                "content": "Some text before the list"
+            },
+            {
+                "type": "list",
+                "content": "Option 1\nOption 2\nOption 3",
+                "items": [
+                    "Option 1",
+                    "Option 2",
+                    "Option 3"
+                ]
+            },
+            {
+                "type": "text",
+                "content": "Some text after the list"
+            }
+        ]
+    }
+]

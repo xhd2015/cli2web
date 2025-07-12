@@ -15,12 +15,14 @@ type SnippetType string
 const (
 	Text SnippetType = "text"
 	Code SnippetType = "code"
+	List SnippetType = "list"
 )
 
 type Snippet struct {
 	Type     SnippetType `json:"type"`
 	Language string      `json:"language,omitempty"` // effective when Type == "code", can be json, and other things
 	Content  string      `json:"content"`
+	Items    []string    `json:"items,omitempty"` // effective when Type == "list"
 }
 
 type Sections []*Section
@@ -41,6 +43,8 @@ func Parse(content string) (Sections, error) {
 	var codeBlockLanguage string
 	var codeLines []string
 	var textLines []string
+	var listItems []string
+	var inList bool
 
 	for _, line := range lines {
 		// Check if this line is a section header (starts with #)
@@ -51,10 +55,21 @@ func Parse(content string) (Sections, error) {
 				if currentSnippet != nil {
 					if currentSnippet.Type == Code {
 						currentSnippet.Content = strings.Join(codeLines, "\n")
+					} else if currentSnippet.Type == List {
+						currentSnippet.Items = listItems
+						currentSnippet.Content = strings.Join(listItems, "\n")
 					} else {
 						currentSnippet.Content = strings.TrimSpace(strings.Join(textLines, "\n"))
 					}
 					currentSnippets = append(currentSnippets, currentSnippet)
+				} else if len(listItems) > 0 {
+					// Handle accumulated list items without a current snippet
+					snippet := &Snippet{
+						Type:    List,
+						Items:   listItems,
+						Content: strings.Join(listItems, "\n"),
+					}
+					currentSnippets = append(currentSnippets, snippet)
 				} else if len(textLines) > 0 {
 					// Handle accumulated text lines without a current snippet
 					textContent := strings.TrimSpace(strings.Join(textLines, "\n"))
@@ -80,8 +95,10 @@ func Parse(content string) (Sections, error) {
 			currentSnippets = []*Snippet{}
 			currentSnippet = nil
 			inCodeBlock = false
+			inList = false
 			codeLines = []string{}
 			textLines = []string{}
+			listItems = []string{}
 			continue
 		}
 
@@ -133,8 +150,51 @@ func Parse(content string) (Sections, error) {
 		if inCodeBlock {
 			codeLines = append(codeLines, line)
 		} else {
-			// Regular text line
-			textLines = append(textLines, line)
+			// Check if this is a list item (starts with - or * after trimming)
+			trimmedLine := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmedLine, "-") || strings.HasPrefix(trimmedLine, "*") {
+				// This is a list item
+				if !inList {
+					// Starting a new list - save any pending text
+					if len(textLines) > 0 {
+						textContent := strings.TrimSpace(strings.Join(textLines, "\n"))
+						if textContent != "" {
+							snippet := &Snippet{
+								Type:    Text,
+								Content: textContent,
+							}
+							currentSnippets = append(currentSnippets, snippet)
+						}
+						textLines = []string{}
+					}
+					inList = true
+					listItems = []string{}
+				}
+
+				// Extract list item content (remove the bullet point)
+				itemContent := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(trimmedLine, "-"), "*"))
+				listItems = append(listItems, itemContent)
+			} else if inList && strings.TrimSpace(line) == "" {
+				// Empty line in list context - continue list
+				continue
+			} else if inList {
+				// Non-list line encountered, end the list
+				if len(listItems) > 0 {
+					snippet := &Snippet{
+						Type:    List,
+						Items:   listItems,
+						Content: strings.Join(listItems, "\n"),
+					}
+					currentSnippets = append(currentSnippets, snippet)
+					listItems = []string{}
+				}
+				inList = false
+				// Process this line as regular text
+				textLines = append(textLines, line)
+			} else {
+				// Regular text line
+				textLines = append(textLines, line)
+			}
 		}
 	}
 
@@ -144,10 +204,21 @@ func Parse(content string) (Sections, error) {
 		if currentSnippet != nil {
 			if currentSnippet.Type == Code {
 				currentSnippet.Content = strings.Join(codeLines, "\n")
+			} else if currentSnippet.Type == List {
+				currentSnippet.Items = listItems
+				currentSnippet.Content = strings.Join(listItems, "\n")
 			} else {
 				currentSnippet.Content = strings.TrimSpace(strings.Join(textLines, "\n"))
 			}
 			currentSnippets = append(currentSnippets, currentSnippet)
+		} else if len(listItems) > 0 {
+			// Handle accumulated list items without a current snippet
+			snippet := &Snippet{
+				Type:    List,
+				Items:   listItems,
+				Content: strings.Join(listItems, "\n"),
+			}
+			currentSnippets = append(currentSnippets, snippet)
 		} else if len(textLines) > 0 {
 			textContent := strings.TrimSpace(strings.Join(textLines, "\n"))
 			if textContent != "" {
@@ -193,4 +264,13 @@ func (snippets Snippets) CombineAllTexts() string {
 		}
 	}
 	return sb.String()
+}
+
+func (snippets Snippets) FindList() *Snippet {
+	for _, snippet := range snippets {
+		if snippet.Type == List {
+			return snippet
+		}
+	}
+	return nil
 }

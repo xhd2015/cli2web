@@ -6,6 +6,9 @@ type Schema = Command
 type Command struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
+	Alias       []string    `json:"alias,omitempty"`
+	Usage       string      `json:"usage,omitempty"`
+	Notes       string      `json:"notes,omitempty"`
 	Commands    []*Command  `json:"commands"`
 	Examples    []*Example  `json:"examples"`
 	Options     []*Option   `json:"options"`

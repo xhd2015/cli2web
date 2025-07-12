@@ -294,28 +294,26 @@ func streamOutput(conn *websocket.Conn, reader io.Reader, streamType string, wg 
 }
 
 func runArgs(args []string) error {
-	var schemaPath string
-	var port int
-
-	origArgs := args
-	args, err := flags.String("--schema", &schemaPath).
-		Bool("--port", &port).
-		Help("-h,--help", help).
-		Parse(args)
-	if err != nil {
-		return err
-	}
-
 	if len(args) > 0 {
-		cmd := origArgs[0]
-		cmdArgs := origArgs[1:]
+		cmd := args[0]
+		cmdArgs := args[1:]
 		switch cmd {
 		case "parse-schema":
 			return handleParseSchema(cmdArgs)
 		case "example":
 			return handleExample(cmdArgs)
 		}
-		return fmt.Errorf("unrecognized command: %s", cmd)
+	}
+
+	var schemaPath string
+	var port int
+
+	args, err := flags.String("--schema", &schemaPath).
+		Bool("--port", &port).
+		Help("-h,--help", help).
+		Parse(args)
+	if err != nil {
+		return err
 	}
 
 	var configData []byte
@@ -439,6 +437,13 @@ func IsStdinTTY() bool {
 }
 
 func handleParseSchema(args []string) error {
+	var maxDepth int
+
+	args, err := flags.Int("--max-depth", &maxDepth).Parse(args)
+	if err != nil {
+		return err
+	}
+
 	if len(args) == 0 {
 		return fmt.Errorf("requires schema file or dir")
 	}
@@ -460,20 +465,25 @@ func handleParseSchema(args []string) error {
 		if err != nil {
 			return fmt.Errorf("reading schema file: %v", err)
 		}
-		var schema *config.Schema
-		if err := json.Unmarshal(data, &schema); err != nil {
+		var parsedSchemaFromJSON *config.Schema
+		if err := json.Unmarshal(data, &parsedSchemaFromJSON); err != nil {
 			return fmt.Errorf("parsing schema file: %v", err)
 		}
 		fmt.Printf("validated\n")
 		return nil
 	}
 	dir := file
-	schema, err := schema.ParseSchemaFromDir(dir)
+
+	var opts []schema.ParseOption
+	if maxDepth > 0 {
+		opts = append(opts, schema.WithMaxDepth(maxDepth))
+	}
+	parsedSchema, err := schema.ParseSchema(schema.NewFSSchemaDir(dir), opts...)
 	if err != nil {
 		return fmt.Errorf("parsing schema file: %v", err)
 	}
 
-	printSchema, err := json.MarshalIndent(schema, "", "  ")
+	printSchema, err := json.MarshalIndent(parsedSchema, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling schema: %v", err)
 	}

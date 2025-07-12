@@ -53,6 +53,11 @@ func TestParseV2(t *testing.T) {
 			markdownFile: "nested-headers.md",
 			jsonFile:     "nested-headers.json",
 		},
+		{
+			name:         "List parsing",
+			markdownFile: "list-test.md",
+			jsonFile:     "list-test.json",
+		},
 	}
 
 	for _, tt := range tests {
