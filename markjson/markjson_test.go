@@ -58,6 +58,11 @@ func TestParseV2(t *testing.T) {
 			markdownFile: "list-test.md",
 			jsonFile:     "list-test.json",
 		},
+		{
+			name:         "Code with comments",
+			markdownFile: "code-with-comments.md",
+			jsonFile:     "code-with-comments.json",
+		},
 	}
 
 	for _, tt := range tests {

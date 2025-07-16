@@ -47,8 +47,8 @@ func Parse(content string) (Sections, error) {
 	var inList bool
 
 	for _, line := range lines {
-		// Check if this line is a section header (starts with #)
-		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+		// Check if this line is a section header (starts with #) - but only if we're not in a code block
+		if !inCodeBlock && strings.HasPrefix(strings.TrimSpace(line), "#") {
 			// Save previous section if exists
 			if currentSection != nil {
 				// Add any pending snippet

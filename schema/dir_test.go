@@ -254,8 +254,7 @@ Show help information.
 {}
 ` + "```"),
 		},
-		// Note: git/git.md should now be found by the improved parsing logic
-		// that handles commands in subdirectories
+		// git/git.md defines the git command in subdirectory
 		"test-schema/git/git.md": &fstest.MapFile{
 			Data: []byte(`# Description
 
@@ -309,11 +308,18 @@ func verifyTestSchema(t *testing.T, schema *config.Schema) {
 		t.Fatal("Schema is nil")
 	}
 
-	// Check root name - with new logic, single .md file determines root name
-	// In createTestSchemaStructure, we have help.md with empty settings {}, so command name is "help"
+	// Check root name - help.md determines root name as "help"
 	actualExpectedRoot := "help"
 	if schema.Name != actualExpectedRoot {
 		t.Errorf("Expected root name '%s', got '%s'", actualExpectedRoot, schema.Name)
+	}
+
+	// Verify root schema has help command properties
+	if schema.Description != "Show help information." {
+		t.Errorf("Root schema description mismatch: %s", schema.Description)
+	}
+	if len(schema.Arguments) != 1 {
+		t.Errorf("Expected 1 argument for root schema, got %d", len(schema.Arguments))
 	}
 
 	// Debug: Print actual commands found
@@ -322,35 +328,18 @@ func verifyTestSchema(t *testing.T, schema *config.Schema) {
 		t.Logf("  Command %d: %s (%s)", i, cmd.Name, cmd.Description)
 	}
 
-	// Should have 2 commands: git and help
-	// git/git.md should now be found with the improved parsing logic
-	if len(schema.Commands) != 2 {
-		t.Fatalf("Expected 2 commands (help and git), got %d", len(schema.Commands))
+	// Should have 1 command: git (help.md defines the root command, not a separate command)
+	if len(schema.Commands) != 1 {
+		t.Fatalf("Expected 1 command (git), got %d", len(schema.Commands))
 	}
 
-	// Find and verify each command
-	var gitCmd, helpCmd *config.Command
+	// Find and verify the git command
+	var gitCmd *config.Command
 	for _, cmd := range schema.Commands {
-		switch cmd.Name {
-		case "git":
+		if cmd.Name == "git" {
 			gitCmd = cmd
-		case "help":
-			helpCmd = cmd
+			break
 		}
-	}
-
-	// Verify help command
-	if helpCmd == nil {
-		t.Fatal("Help command not found")
-	}
-	if helpCmd.Description != "Show help information." {
-		t.Errorf("Help command description mismatch: %s", helpCmd.Description)
-	}
-	if len(helpCmd.Arguments) != 1 {
-		t.Errorf("Expected 1 argument for help command, got %d", len(helpCmd.Arguments))
-	}
-	if len(helpCmd.Commands) != 0 {
-		t.Errorf("Expected 0 subcommands for help command, got %d", len(helpCmd.Commands))
 	}
 
 	// Verify git command
@@ -481,11 +470,18 @@ func verifyCorrectSchema(t *testing.T, schema *config.Schema, expectedRoot strin
 		t.Fatal("Schema is nil")
 	}
 
-	// Check root name - with new logic, multiple .md files: git.md and help.md
-	// Should select first alphabetically: git.md, so root name is "git"
+	// Check root name - git.md determines root name as "git"
 	actualExpectedRoot := "git"
 	if schema.Name != actualExpectedRoot {
 		t.Errorf("Expected root name '%s', got '%s'", actualExpectedRoot, schema.Name)
+	}
+
+	// Verify root schema has git command properties
+	if schema.Description != "Git version control commands." {
+		t.Errorf("Root schema description mismatch: %s", schema.Description)
+	}
+	if len(schema.Options) != 1 {
+		t.Errorf("Expected 1 option for root schema, got %d", len(schema.Options))
 	}
 
 	// Debug: Print actual commands found
@@ -497,19 +493,18 @@ func verifyCorrectSchema(t *testing.T, schema *config.Schema, expectedRoot strin
 		}
 	}
 
-	// Should have 2 commands: git and help
-	if len(schema.Commands) != 2 {
-		t.Fatalf("Expected 2 commands, got %d", len(schema.Commands))
+	// Should have 1 command: git (with status as subcommand)
+	// Note: help.md is ignored when git.md is the root command
+	if len(schema.Commands) != 1 {
+		t.Fatalf("Expected 1 command, got %d", len(schema.Commands))
 	}
 
-	// Find and verify each command
-	var gitCmd, helpCmd *config.Command
+	// Find and verify the git command
+	var gitCmd *config.Command
 	for _, cmd := range schema.Commands {
-		switch cmd.Name {
-		case "git":
+		if cmd.Name == "git" {
 			gitCmd = cmd
-		case "help":
-			helpCmd = cmd
+			break
 		}
 	}
 
@@ -535,17 +530,4 @@ func verifyCorrectSchema(t *testing.T, schema *config.Schema, expectedRoot strin
 		t.Errorf("Git status description mismatch: %s", gitCmd.Commands[0].Description)
 	}
 
-	// Verify help command
-	if helpCmd == nil {
-		t.Fatal("Help command not found")
-	}
-	if helpCmd.Description != "Show help information." {
-		t.Errorf("Help command description mismatch: %s", helpCmd.Description)
-	}
-	if len(helpCmd.Arguments) != 1 {
-		t.Errorf("Expected 1 argument for help command, got %d", len(helpCmd.Arguments))
-	}
-	if len(helpCmd.Commands) != 0 {
-		t.Errorf("Expected 0 subcommands for help command, got %d", len(helpCmd.Commands))
-	}
 }

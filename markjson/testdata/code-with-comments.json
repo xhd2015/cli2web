@@ -1,0 +1,22 @@
+[
+    {
+        "title": "spl test",
+        "snippets": [
+            {
+                "type": "code",
+                "language": "sh",
+                "content": "# Test command 1\nspl test hello\n# Test command 2  \nspl test world\nspl test foo bar"
+            }
+        ]
+    },
+    {
+        "title": "spl aes",
+        "snippets": [
+            {
+                "type": "code",
+                "language": "sh",
+                "content": "# Encrypt a file\nspl aes encrypt --key mykey file.txt\n# Decrypt a file\nspl aes decrypt --key mykey file.txt.enc\nspl aes generate-key"
+            }
+        ]
+    }
+]
